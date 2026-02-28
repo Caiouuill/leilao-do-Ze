@@ -1,14 +1,14 @@
 const http = require('http');
 
 const port = 3000;
-const host = 'localhost';
+const host = '201.54.204.45';
 
 const server = http.createServer((req, res) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/plain');
-  res.end('Servidor local com JS funcional!\n');
+  res.end('VAI SE FODER!\n');
 });
 
-server.listen(port, host, () => {
-  console.log(`Servidor rodando em http://${host}:${port}/`);
+server.listen(3000, () => {
+  console.log('Servidor rodando na porta 3000');
 });
