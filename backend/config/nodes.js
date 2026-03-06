@@ -1,0 +1,5 @@
+module.exports = [
+  { id: 1, host: "localhost", port: 3001 },
+  { id: 2, host: "localhost", port: 3002 },
+  { id: 3, host: "localhost", port: 3003 }
+];
