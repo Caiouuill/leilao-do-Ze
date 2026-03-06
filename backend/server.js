@@ -6,7 +6,7 @@ const host = '201.54.204.45';
 const server = http.createServer((req, res) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/plain');
-  res.end('VAI SE FODER!\n');
+  res.end('Rodando no PC do Lucas!\n');
 });
 
 server.listen(3000, () => {
