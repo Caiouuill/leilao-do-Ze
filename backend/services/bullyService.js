@@ -1,5 +1,6 @@
 const nodes = require("../config/nodes");
 const sendRequest = require("./requestService");
+const bullyService = require("../services/bullyService");
 
 let coordinator = null;
 const nodeId = parseInt(process.env.ID);
