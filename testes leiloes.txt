@@ -1,0 +1,17 @@
+// criar um leilao
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/auction" `
+  -ContentType "application/json" `
+  -Body '{"auctionId":"A1","item":"Notebook Gamer","startingPrice":3000}'
+
+//dar lance
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/bid" `
+  -ContentType "application/json" `
+  -Body '{"auctionId":"A1","userId":"U10","amount":3500}'
+
+//encerrar leilao
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/auction/end" `
+  -ContentType "application/json" `
+  -Body '{"auctionId":"A1"}'
