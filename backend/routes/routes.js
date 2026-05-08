@@ -1,4 +1,5 @@
 const electionController = require("../controllers/electionController");
+const auctionService = require("../services/auctionService");
 const { handleLeilao } = require("../controllers/leilaoController");
 
 
@@ -10,6 +11,20 @@ function handleRoutes(req, res, nodeId) {
   }
 
   if (req.method === "POST") {
+        if (req.url === "/auction") {
+      auctionService.createAuction(req, res);
+      return true;
+    }
+
+    if (req.url === "/bid") {
+      auctionService.placeBid(req, res);
+      return true;
+    }
+
+    if (req.url === "/auction/end") {
+      auctionService.endAuction(req, res);
+      return true;
+    }
 
     let body = "";
 
