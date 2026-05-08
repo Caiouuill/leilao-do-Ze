@@ -1,5 +1,7 @@
 const electionController = require("../controllers/electionController");
 const auctionService = require("../services/auctionService");
+const { handleLeilao } = require("../controllers/leilaoController");
+
 
 function handleRoutes(req, res, nodeId) {
 
@@ -38,6 +40,11 @@ function handleRoutes(req, res, nodeId) {
 
       if (req.url === "/coordinator") {
         electionController.handleCoordinator(req, res, data);
+      }
+
+      if (req.url === "/leilao") {
+        leilaoController.handleLeilao(req, res, nodeId);
+        return;
       }
     });
 
