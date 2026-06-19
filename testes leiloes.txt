@@ -1,17 +1,41 @@
+$env:ID=1; $env:PORT=3001; node server/server.js
+
 // criar um leilao
 
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/auction" `
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/auction" `
   -ContentType "application/json" `
   -Body '{"auctionId":"A1","item":"Notebook Gamer","startingPrice":3000}'
 
 //dar lance
 
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/bid" `
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/bid" `
   -ContentType "application/json" `
   -Body '{"auctionId":"A1","userId":"U10","amount":3500}'
 
 //encerrar leilao
 
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/auction/end" `
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/auction/end" `
   -ContentType "application/json" `
   -Body '{"auctionId":"A1"}'
+
+//testar o erros.
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/bid" `
+  -ContentType "application/json" `
+  -Body '{"auctionId":"INEXISTENTE","userId":"user-joao","amount":500}'
+
+// Lance sem leilão — publica bid.requested + bid.rejected
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/bid" `
+  -ContentType "application/json" `
+  -Body '{"auctionId":"INEXISTENTE","userId":"user-joao","amount":500}'
+
+
+// 3. Lance menor que o inicial — publica bid.requested + bid.rejected
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/bid" `
+  -ContentType "application/json" `
+  -Body '{"auctionId":"A1","userId":"user-joao","amount":100}'
+
+# 4. Lance válido — publica bid.requested + bid.placed
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/bid" `
+  -ContentType "application/json" `
+  -Body '{"auctionId":"A1","userId":"user-joao","amount":3500}'
