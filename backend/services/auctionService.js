@@ -2,20 +2,15 @@ const { randomUUID } = require('crypto');
 const { publishEvent } = require('./eventBus');
 
 const auctions = new Map();
-const bids = new Map();
+const bids     = new Map();
 
 function getBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
+    req.on('data', chunk => body += chunk);
     req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(error);
-      }
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch (err) { reject(err); }
     });
   });
 }
@@ -28,15 +23,17 @@ function json(res, statusCode, payload) {
 
 function buildEvent(eventType, data) {
   return {
-    eventId: randomUUID(),
+    eventId       : randomUUID(),
     eventType,
-    eventVersion: 1,
-    occurredAt: new Date().toISOString(),
-    producer: 'leilao-api',
-    correlationId: randomUUID(),
+    eventVersion  : 1,
+    occurredAt    : new Date().toISOString(),
+    producer      : 'leilao-api',
+    correlationId : randomUUID(),
     data,
   };
 }
+
+// ─── Criar leilão ────────────────────────────────────────────────────────────
 
 async function createAuction(req, res) {
   const { auctionId = randomUUID(), item, startingPrice = 0 } = await getBody(req);
@@ -50,30 +47,63 @@ async function createAuction(req, res) {
   json(res, 201, { message: 'Leilão criado', auction, event });
 }
 
+// ─── Registrar lance ─────────────────────────────────────────────────────────
+// Publica bid.requested SEMPRE — a validação acontece no handler.
+// Se inválido, o handler publica bid.rejected com o motivo.
+
 async function placeBid(req, res) {
   const { auctionId, userId, amount } = await getBody(req);
-  const auction = auctions.get(auctionId);
 
-  if (!auction || auction.status !== 'OPEN') {
-    return json(res, 400, { error: 'Leilão inexistente ou encerrado' });
+  const requestEvent = buildEvent('bid.requested', { auctionId, userId, amount, requestedAt: new Date().toISOString() });
+  await publishEvent('bid.requested', requestEvent);
+
+  // Validação
+  const auction    = auctions.get(auctionId);
+  const auctionBids = bids.get(auctionId) || [];
+  const highest    = auctionBids.reduce((max, b) => Math.max(max, b.amount), auction?.startingPrice ?? 0);
+
+  if (!auction) {
+    const rejEvent = buildEvent('bid.rejected', {
+      auctionId, userId, amount,
+      reason: 'Leilão não encontrado',
+      correlationId: requestEvent.eventId,
+    });
+    await publishEvent('bid.rejected', rejEvent);
+    return json(res, 404, { error: 'Leilão não encontrado', event: rejEvent });
   }
 
-  const auctionBids = bids.get(auctionId) || [];
-  const highest = auctionBids.reduce((max, b) => Math.max(max, b.amount), auction.startingPrice);
+  if (auction.status !== 'OPEN') {
+    const rejEvent = buildEvent('bid.rejected', {
+      auctionId, userId, amount,
+      reason: 'Leilão encerrado',
+      correlationId: requestEvent.eventId,
+    });
+    await publishEvent('bid.rejected', rejEvent);
+    return json(res, 400, { error: 'Leilão encerrado', event: rejEvent });
+  }
 
   if (amount <= highest) {
-    return json(res, 400, { error: 'Lance deve ser maior que o atual' });
+    const rejEvent = buildEvent('bid.rejected', {
+      auctionId, userId, amount, highest,
+      reason: `Lance deve ser maior que R$${highest}`,
+      correlationId: requestEvent.eventId,
+    });
+    await publishEvent('bid.rejected', rejEvent);
+    return json(res, 400, { error: `Lance deve ser maior que R$${highest}`, event: rejEvent });
   }
 
+  // Lance válido
   const bid = { bidId: randomUUID(), auctionId, userId, amount, createdAt: new Date().toISOString() };
   auctionBids.push(bid);
   bids.set(auctionId, auctionBids);
 
-  const event = buildEvent('bid.placed', bid);
-  await publishEvent('bid.placed', event);
+  const placedEvent = buildEvent('bid.placed', { ...bid, correlationId: requestEvent.eventId });
+  await publishEvent('bid.placed', placedEvent);
 
-  json(res, 201, { message: 'Lance registrado', bid, event });
+  json(res, 201, { message: 'Lance registrado', bid, event: placedEvent });
 }
+
+// ─── Encerrar leilão ─────────────────────────────────────────────────────────
 
 async function endAuction(req, res) {
   const { auctionId } = await getBody(req);
@@ -83,25 +113,16 @@ async function endAuction(req, res) {
     return json(res, 404, { error: 'Leilão não encontrado' });
   }
 
-  auction.status = 'ENDED';
+  auction.status  = 'ENDED';
   auction.endedAt = new Date().toISOString();
 
   const auctionBids = bids.get(auctionId) || [];
-  const winner = auctionBids.sort((a, b) => b.amount - a.amount)[0] || null;
+  const winner      = auctionBids.sort((a, b) => b.amount - a.amount)[0] || null;
 
-  const event = buildEvent('auction.ended', {
-    auctionId,
-    winner,
-    totalBids: auctionBids.length,
-  });
-
+  const event = buildEvent('auction.ended', { auctionId, winner, totalBids: auctionBids.length });
   await publishEvent('auction.ended', event);
 
   json(res, 200, { message: 'Leilão encerrado', auction, winner, event });
 }
 
-module.exports = {
-  createAuction,
-  placeBid,
-  endAuction,
-};
+module.exports = { createAuction, placeBid, endAuction };
