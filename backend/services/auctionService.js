@@ -47,9 +47,6 @@ async function createAuction(req, res) {
   json(res, 201, { message: 'Leilão criado', auction, event });
 }
 
-// ─── Registrar lance ─────────────────────────────────────────────────────────
-// Publica bid.requested SEMPRE — a validação acontece no handler.
-// Se inválido, o handler publica bid.rejected com o motivo.
 
 async function placeBid(req, res) {
   const { auctionId, userId, amount } = await getBody(req);

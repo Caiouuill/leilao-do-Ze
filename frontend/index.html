@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leilão do Zé</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" data-link>
+        <span>Leilão do Zé</span>
+        <small>Sistema de leilões</small>
+      </a>
+      <nav class="nav" aria-label="Navegação principal">
+        <a href="/" data-link>Leilões</a>
+        <a href="/criacao" data-link data-role="seller">Criar leilão</a>
+        <a href="/admin" data-link data-role="admin">Admin</a>
+        <a href="/cadastro" data-link data-guest>Cadastro</a>
+        <a href="/login" data-link data-guest>Login</a>
+      </nav>
+      <div class="session">
+        <span id="sessionLabel">Visitante</span>
+        <button id="logoutButton" class="ghost hidden" type="button">Sair</button>
+      </div>
+    </header>
+
+    <main id="app" class="page"></main>
+    <div id="toast" class="toast hidden"></div>
+
+    <template id="loginTemplate">
+      <section class="auth-page">
+        <form id="loginForm" class="panel auth-card">
+          <p class="eyebrow">Acesso</p>
+          <h1>Entrar</h1>
+          <label>
+            Email
+            <input name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Senha
+            <input name="senha" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit">Entrar</button>
+          <p class="helper">Ainda não tem conta? <a href="/cadastro" data-link>Cadastre-se</a>.</p>
+        </form>
+      </section>
+    </template>
+
+    <template id="registerTemplate">
+      <section class="auth-page">
+        <form id="registerForm" class="panel auth-card">
+          <p class="eyebrow">Cadastro</p>
+          <h1>Criar conta comum</h1>
+          <label>
+            Nome de usuário
+            <input name="nome_usuario" autocomplete="username" required />
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Senha
+            <input name="senha" type="password" autocomplete="new-password" required />
+          </label>
+          <button type="submit">Criar conta</button>
+          <p class="helper">Vendedores precisam ser aprovados pelo administrador.</p>
+        </form>
+      </section>
+    </template>
+
+    <template id="auctionsTemplate">
+      <section class="section-head">
+        <div>
+          <p class="eyebrow">Salas abertas</p>
+          <h1>Leilões</h1>
+          <p>Usuário comum pode participar e dar lances nas salas em que entrou antes do início.</p>
+        </div>
+        <button id="refreshButton" class="ghost" type="button">Atualizar</button>
+      </section>
+      <section id="profilePanel" class="profile-strip hidden"></section>
+      <section id="auctionList" class="auction-list"></section>
+    </template>
+
+    <template id="createTemplate">
+      <section class="section-head">
+        <div>
+          <p class="eyebrow">Vendedor verificado</p>
+          <h1>Criar leilão</h1>
+          <p>Administradores e vendedores verificados podem criar leilões. Vendedores têm intervalo de 8 horas.</p>
+        </div>
+      </section>
+      <form id="auctionForm" class="panel form-grid">
+        <label>
+          Título
+          <input name="titulo" required />
+        </label>
+        <label>
+          Categoria
+          <input name="categoria" placeholder="Veículo, imóvel, produto..." required />
+        </label>
+        <label class="wide">
+          Descrição
+          <textarea name="descricao" rows="4" required></textarea>
+        </label>
+        <label>
+          Lance mínimo
+          <input name="lance_minimo" type="number" step="0.01" min="1" required />
+        </label>
+        <label>
+          Máx. participantes
+          <input name="max_participantes" type="number" min="10" max="50" value="10" required />
+        </label>
+        <label data-admin-only>
+          Status inicial
+          <select name="status">
+            <option value="AGENDADO">Agendado</option>
+            <option value="ATIVO">Ativo</option>
+          </select>
+        </label>
+        <label>
+          Início
+          <input name="data_inicio" type="datetime-local" required />
+        </label>
+        <label>
+          Fim
+          <input name="data_fim" type="datetime-local" required />
+        </label>
+        <div class="wide actions">
+          <button type="submit">Criar leilão</button>
+        </div>
+      </form>
+    </template>
+
+    <template id="adminTemplate">
+      <section class="section-head">
+        <div>
+          <p class="eyebrow">Painel administrativo</p>
+          <h1>Admin</h1>
+          <p>Gerencie créditos, usuários e salas ativas.</p>
+        </div>
+      </section>
+
+      <section class="summary-grid">
+        <article class="metric"><span>Usuários</span><strong id="metricUsers">0</strong></article>
+        <article class="metric"><span>Leilões ativos</span><strong id="metricActiveAuctions">0</strong></article>
+        <article class="metric"><span>Créditos em circulação</span><strong id="metricCredits">R$ 0,00</strong></article>
+        <article class="metric"><span>Lances</span><strong id="metricBids">0</strong></article>
+      </section>
+
+      <section class="admin-grid">
+        <form id="creditForm" class="panel stack">
+          <h2>Fornecer ou remover créditos</h2>
+          <label>
+            Usuário
+            <select name="usuario_id" id="creditUserSelect" required></select>
+          </label>
+          <label>
+            Quantidade
+            <input name="quantidade" type="number" step="0.01" placeholder="100" required />
+          </label>
+          <label>
+            Descrição
+            <input name="descricao" placeholder="Crédito administrativo" />
+          </label>
+          <button type="submit">Atualizar saldo</button>
+        </form>
+
+        <form id="adminUserForm" class="panel stack">
+          <h2>Alterar tipo de usuário</h2>
+          <label>
+            Usuário
+            <select name="usuario_id" id="adminUserSelect" required></select>
+          </label>
+          <label>
+            Tipo
+            <select name="tipo_usuario">
+              <option value="COMUM">Comum</option>
+              <option value="VENDEDOR">Vendedor verificado</option>
+              <option value="ADMIN">Administrador</option>
+              <option value="SUPERADMIN">Superadministrador</option>
+            </select>
+          </label>
+          <button type="submit">Salvar usuário</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Usuários</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Email</th>
+                <th>Tipo</th>
+                <th>Créditos</th>
+              </tr>
+            </thead>
+            <tbody id="usersTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Lances recentes</h2>
+        <div id="bidList" class="timeline"></div>
+      </section>
+    </template>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -24,11 +24,6 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:3001/bid" `
   -ContentType "application/json" `
   -Body '{"auctionId":"INEXISTENTE","userId":"user-joao","amount":500}'
 
-// Lance sem leilão — publica bid.requested + bid.rejected
-Invoke-RestMethod -Method Post -Uri "http://localhost:3001/bid" `
-  -ContentType "application/json" `
-  -Body '{"auctionId":"INEXISTENTE","userId":"user-joao","amount":500}'
-
 
 // 3. Lance menor que o inicial — publica bid.requested + bid.rejected
 Invoke-RestMethod -Method Post -Uri "http://localhost:3001/bid" `
